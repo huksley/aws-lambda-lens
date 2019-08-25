@@ -1,0 +1,64 @@
+service: aws-lambda-lens
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  region: eu-west-1
+  stage: dev
+  # optional, in MB, default is 1024, min is 128
+  memorySize: 128
+  # optional, in seconds, default is 6
+  timeout: 30
+  # optional, default is true
+  versionFunctions: false
+  environment:
+    WORKFLOW_ARN: ${env:WORKFLOW_ARN}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - ${env:IMAGE_BUCKET, 'sample-bucket'}
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:
+        Fn::Join:
+          - ""
+          - - "arn:aws:s3:::"
+            - ${env:IMAGE_BUCKET, 'sample-bucket'}
+            - "/*"
+    - Effect: "Allow"
+      Action: "Action": "logs:GetLogEvents",
+      Resource: "arn:aws:logs:*:*:log-group:*:*:*"
+    - Effect: "Allow"
+      Action: 
+        - "logs:ListTagsLogGroup",
+        - "logs:DescribeLogGroups",
+        - "logs:DescribeLogStreams",
+        - "logs:GetLogEvents",
+        - "logs:FilterLogEvents"
+      Resource: "arn:aws:logs:*:*:log-group:*"
+    - Effect: "Allow"
+      Action: "logs:GetLogRecord"
+      Resource: "*"
+
+plugins:
+  - serverless-plugin-typescript
+
+package:
+  exclude:
+    - "node_modules/aws-sdk/**"
+    - "node_modules/aws-lambda/**"
+
+functions:
+  handleGet:
+    handler: src/lambda-lens.getHandler
+    events:
+      - http:
+          path: "/"
+          method: GET
+          cors: true
